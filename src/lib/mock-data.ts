@@ -74,10 +74,17 @@ export type Personnel = {
   email: string;
   role: 'admin' | 'employee'; // Rol bilgisi eklendi
   userId?: string; // Firebase Auth UID (isteğe bağlı, eğer personel kendi hesabını yönetiyorsa)
+  password: string; // Admin şifresi eklendi
 };
 
 const initialPersonnel: Personnel[] = [
-  { id: "admin", name: "Admin Patron", email: "admin@biztrack.com", role: 'admin' }
+  { 
+    id: "admin", 
+    name: "Admin Patron", 
+    email: "admin@biztrack.com", 
+    role: 'admin',
+    password: "admin123" // Admin şifresi eklendi
+  }
 ];
 
 export const mockEmployees = initialPersonnel.map(p => p.name);
@@ -356,7 +363,8 @@ export const getPersonnelListFromFirestore = async (): Promise<Personnel[]> => {
           name: data.name, 
           email: data.email, 
           role: data.role || 'employee', // Role yoksa varsayılan 'employee'
-          userId: data.userId 
+          userId: data.userId,
+          password: data.password || "" // Admin şifresi eklendi
       } as Personnel);
     });
     return personnelList;
@@ -373,7 +381,8 @@ export const addPersonnelToFirestore = async (personnelData: Omit<Personnel, 'id
       name: personnelData.name,
       email: personnelData.email,
       role: personnelData.role || 'employee',
-      userId: personnelData.userId || null
+      userId: personnelData.userId || null,
+      password: personnelData.password || "" // Admin şifresi eklendi
     };
     const docRef = await addDoc(personnelCollection, dataToAdd);
     return { id: docRef.id, ...dataToAdd } as Personnel;
