@@ -47,12 +47,7 @@ export type Membership = {
   email: string;
 };
 
-export const mockMemberships: Membership[] = [
-  { id: "mem1", memberId: "MEM001", name: "Ali Veli", status: "active", joinDate: "2023-01-15", lastVisit: "2024-07-25", email: "ali.veli@example.com" },
-  { id: "mem2", memberId: "MEM002", name: "Buse Can", status: "active", joinDate: "2022-11-01", lastVisit: "2024-07-20", email: "buse.can@example.com" },
-  { id: "mem3", memberId: "MEM003", name: "Cem Durmaz", status: "inactive", joinDate: "2023-05-10", lastVisit: "2024-03-10", email: "cem.durmaz@example.com" },
-  { id: "mem4", memberId: "MEM004", name: "Deniz Arslan", status: "expired", joinDate: "2023-07-01", lastVisit: "2024-06-30", email: "deniz.arslan@example.com" },
-];
+export const mockMemberships: Membership[] = [];
 
 export type EmployeeActivity = {
   id: string;
@@ -82,10 +77,7 @@ export type Personnel = {
 };
 
 const initialPersonnel: Personnel[] = [
-  { id: "p1", name: "Ahmet Kaya", email: "ahmet@example.com", role: 'employee' },
-  { id: "p2", name: "Zeynep Demir", email: "zeynep@example.com", role: 'employee' },
-  { id: "p3", name: "Mehmet Yılmaz", email: "mehmet@example.com", role: 'employee' },
-  { id: "admin", name: "Admin Patron", email: "admin@biztrack.com", role: 'admin' }, // Added admin user
+  { id: "admin", name: "Admin Patron", email: "admin@biztrack.com", role: 'admin' }
 ];
 
 export const mockEmployees = initialPersonnel.map(p => p.name);
