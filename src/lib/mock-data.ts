@@ -29,13 +29,7 @@ export type CustomerLog = {
   employeeInvolved: string;
 };
 
-export const mockCustomerLogs: CustomerLog[] = [
-  { id: "cl1", timestamp: "2024-07-28 10:05:15", customerId: "CUST001", customerName: "Ayşe Yılmaz", type: "entry", employeeInvolved: "Ahmet Kaya" },
-  { id: "cl2", timestamp: "2024-07-28 10:30:42", customerId: "CUST002", customerName: "Mehmet Öz", type: "entry", employeeInvolved: "Zeynep Demir" },
-  { id: "cl3", timestamp: "2024-07-28 11:15:03", customerId: "CUST001", customerName: "Ayşe Yılmaz", type: "exit", employeeInvolved: "Ahmet Kaya" },
-  { id: "cl4", timestamp: "2024-07-28 12:00:50", customerId: "CUST003", customerName: "Fatma Şahin", type: "entry", employeeInvolved: "Ahmet Kaya" },
-  { id: "cl5", timestamp: "2024-07-28 12:45:22", customerId: "CUST002", customerName: "Mehmet Öz", type: "exit", employeeInvolved: "Zeynep Demir" },
-];
+export const mockCustomerLogs: CustomerLog[] = [];
 
 export type Membership = {
   id: string;
@@ -63,10 +57,7 @@ export type EmployeeActivity = {
   leaveEndDate?: string; // For LEAVE_REQUEST
 };
 
-const initialEmployeeActivities: EmployeeActivity[] = [
-  { id: "ea1", timestamp: "2024-07-28 09:00:00", employeeName: "Ahmet Kaya", employeeEmail: "ahmet@example.com", description: "Sabah kontrolü", eventType: "TASK", status: "completed", duration: "15dk" },
-  { id: "ea2", timestamp: "2024-07-28 09:30:00", employeeName: "Zeynep Demir", employeeEmail: "zeynep@example.com", description: "Yeni üye kaydı: MEM005", eventType: "TASK", status: "completed", duration: "10dk" },
-];
+const initialEmployeeActivities: EmployeeActivity[] = [];
 
 export type Personnel = {
   id: string;
@@ -83,7 +74,7 @@ const initialPersonnel: Personnel[] = [
     name: "Admin Patron", 
     email: "admin@biztrack.com", 
     role: 'admin',
-    password: "admin123" // Admin şifresi eklendi
+    password: "admin123"
   }
 ];
 
