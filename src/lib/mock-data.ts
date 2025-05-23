@@ -1,5 +1,24 @@
-
 import { type User } from "firebase/auth"; // Placeholder, not used due to no Firebase integration
+
+// Firebase Firestore imports
+import {
+  collection,
+  getDocs,
+  addDoc,
+  doc,
+  deleteDoc,
+  query,
+  where,
+  orderBy,
+  updateDoc,
+  setDoc,
+  getDoc // To fetch a specific document
+} from "firebase/firestore";
+import { db } from "@/lib/firebase"; // Adjust the import path if necessary
+
+// Firebase koleksiyonları
+const employeeActivitiesCollection = collection(db, "employeeActivities");
+const leaveRequestsCollection = collection(db, "leaveRequests");
 
 export type CustomerLog = {
   id: string;
@@ -58,13 +77,15 @@ export type Personnel = {
   id: string;
   name: string;
   email: string;
+  role: 'admin' | 'employee'; // Rol bilgisi eklendi
+  userId?: string; // Firebase Auth UID (isteğe bağlı, eğer personel kendi hesabını yönetiyorsa)
 };
 
 const initialPersonnel: Personnel[] = [
-  { id: "p1", name: "Ahmet Kaya", email: "ahmet@example.com" },
-  { id: "p2", name: "Zeynep Demir", email: "zeynep@example.com" },
-  { id: "p3", name: "Mehmet Yılmaz", email: "mehmet@example.com" },
-  { id: "admin", name: "Admin Patron", email: "admin@biztrack.com" }, // Added admin user
+  { id: "p1", name: "Ahmet Kaya", email: "ahmet@example.com", role: 'employee' },
+  { id: "p2", name: "Zeynep Demir", email: "zeynep@example.com", role: 'employee' },
+  { id: "p3", name: "Mehmet Yılmaz", email: "mehmet@example.com", role: 'employee' },
+  { id: "admin", name: "Admin Patron", email: "admin@biztrack.com", role: 'admin' }, // Added admin user
 ];
 
 export const mockEmployees = initialPersonnel.map(p => p.name);
@@ -304,3 +325,95 @@ export const updateLeaveRequestStatusInStorage = (requestId: string, newStatus: 
 
   return requests[requestIndex];
 }
+
+// Aktiviteleri Firestore'dan getir (filtreleme eklenebilir)
+export const getEmployeeActivitiesFromFirestore = async (userId?: string): Promise<EmployeeActivity[]> => {
+  try {
+    let activitiesQuery = query(employeeActivitiesCollection);
+    
+    if (userId) {
+      activitiesQuery = query(employeeActivitiesCollection, where("employeeEmail", "==", userId));
+    }
+    
+    const querySnapshot = await getDocs(activitiesQuery);
+    const activities: EmployeeActivity[] = [];
+    
+    querySnapshot.forEach((doc) => {
+      activities.push({ id: doc.id, ...doc.data() } as EmployeeActivity);
+    });
+    
+    return activities;
+  } catch (e) {
+    console.error("Error fetching employee activities from Firestore", e);
+    return [];
+  }
+};
+
+// Firestore collection reference for Personnel
+const personnelCollection = collection(db, "personnel");
+
+// Personel listesini Firestore'dan getir
+export const getPersonnelListFromFirestore = async (): Promise<Personnel[]> => {
+  try {
+    const querySnapshot = await getDocs(personnelCollection);
+    const personnelList: Personnel[] = [];
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      personnelList.push({ 
+          id: doc.id, 
+          name: data.name, 
+          email: data.email, 
+          role: data.role || 'employee', // Role yoksa varsayılan 'employee'
+          userId: data.userId 
+      } as Personnel);
+    });
+    return personnelList;
+  } catch (e) {
+    console.error("Error fetching personnel list from Firestore: ", e);
+    return [];
+  }
+};
+
+export const addPersonnelToFirestore = async (personnelData: Omit<Personnel, 'id'>): Promise<Personnel | null> => {
+  try {
+    // Eğer ID belirtilmemişse Firestore otomatik ID oluşturur
+    const dataToAdd = {
+      name: personnelData.name,
+      email: personnelData.email,
+      role: personnelData.role || 'employee',
+      userId: personnelData.userId || null
+    };
+    const docRef = await addDoc(personnelCollection, dataToAdd);
+    return { id: docRef.id, ...dataToAdd } as Personnel;
+  } catch (e) {
+    console.error("Error adding personnel to Firestore: ", e);
+    return null;
+  }
+};
+
+export const removePersonnelFromFirestore = async (personnelId: string): Promise<void> => {
+  try {
+    await deleteDoc(doc(personnelCollection, personnelId));
+  } catch (e) {
+    console.error("Error removing personnel from Firestore: ", e);
+  }
+};
+
+// Function to update leave request status (for admin)
+export const updateLeaveRequestStatusInFirestore = async (requestId: string, status: "approved" | "rejected"): Promise<void> => {
+    try {
+        const requestRef = doc(leaveRequestsCollection, requestId);
+        await updateDoc(requestRef, { status: status });
+        console.log(`Leave request ${requestId} status updated to ${status}`);
+    } catch (e) {
+        console.error("Error updating leave request status in Firestore: ", e);
+    }
+};
+
+// getCurrentUser yerine useAuth kullanılmalı
+// export const getCurrentUser = ...;
+
+// PATRON_EMAIL'in ikinci tanımını kaldırıyorum
+// --- Mock Data Yapısını Temizleme (Sonraki Adım) --
+// Firebase entegrasyonu tamamlandıkça localStorage ile ilgili tüm kodlar temizlenecek.
+// initialPersonnel, initialEmployeeActivities, initialLeaveRequests gibi initial datalar kaldırılacak.

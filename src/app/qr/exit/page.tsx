@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,7 @@ export default function QRExitPage() {
       if (user && user.email && user.name) {
         setUserForDisplay(user);
         setStatus('processing');
-        processExit(user);
+        // processExit(user); // Automatic processing removed
       } else {
         // console.log("QR Exit Page - No user found, showing login prompt."); // For debugging
         setStatus('requires_login');

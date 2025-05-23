@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Gauge } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase"; // Adjust the import path if necessary
 
 const loginFormSchema = z.object({
   email: z.string().email({ message: "Geçerli bir e-posta adresi giriniz." }),
@@ -26,8 +27,6 @@ const loginFormSchema = z.object({
 });
 
 type LoginFormValues = z.infer<typeof loginFormSchema>;
-
-const USERS_STORAGE_KEY = "biztrack_users"; // Should be same as in signup
 
 export default function LoginPage() {
   const router = useRouter();
@@ -44,21 +43,17 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormValues) => {
     if (typeof window !== "undefined") {
       try {
-        const existingUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
-        const existingUsers = existingUsersRaw ? JSON.parse(existingUsersRaw) : [];
+        // Firebase auth logic
+        const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+        const user = userCredential.user; // Get the authenticated user
 
-        const foundUser = existingUsers.find(
-          (user: { email: string; password?: string }) => // Allow password to be optional for safety if it wasn't stored
-            user.email === data.email && user.password === data.password // In real app, compare hashed passwords
-        );
-
-        if (foundUser) {
+        if (user) {
           toast({
             title: "Giriş Başarılı",
             description: "Yönetim paneline yönlendiriliyorsunuz...",
           });
-          // Store user info for UserNav or other components
-          localStorage.setItem("biztrack_currentUser", JSON.stringify({ email: foundUser.email }));
+          // Optionally store minimal user info in localStorage or a cookie if needed for client-side persistence
+          // localStorage.setItem("biztrack_currentUser", JSON.stringify({ email: user.email })); // Example
           router.push("/dashboard");
         } else {
           toast({

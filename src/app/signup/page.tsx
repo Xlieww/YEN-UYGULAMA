@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,6 +18,8 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Gauge, UserPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebase"; // Adjust the import path if necessary
 
 const signupFormSchema = z.object({
   email: z.string().email({ message: "Geçerli bir e-posta adresi giriniz." }),
@@ -30,8 +31,6 @@ const signupFormSchema = z.object({
 });
 
 type SignupFormValues = z.infer<typeof signupFormSchema>;
-
-const USERS_STORAGE_KEY = "biztrack_users";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -49,23 +48,8 @@ export default function SignupPage() {
   const onSubmit = async (data: SignupFormValues) => {
     if (typeof window !== "undefined") {
       try {
-        const existingUsersRaw = localStorage.getItem(USERS_STORAGE_KEY);
-        const existingUsers = existingUsersRaw ? JSON.parse(existingUsersRaw) : [];
-
-        if (existingUsers.find((user: SignupFormValues) => user.email === data.email)) {
-          toast({
-            variant: "destructive",
-            title: "Kayıt Başarısız",
-            description: "Bu e-posta adresi zaten kayıtlı.",
-          });
-          form.setError("email", { type: "manual", message: "Bu e-posta adresi zaten kayıtlı." });
-          return;
-        }
-
-        // In a real app, hash the password before storing
-        const newUser = { email: data.email, password: data.password };
-        existingUsers.push(newUser);
-        localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(existingUsers));
+        // Firebase auth logic
+        const userCredential = await createUserWithEmailAndPassword(auth, data.email, data.password);
 
         toast({
           title: "Kayıt Başarılı",

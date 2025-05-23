@@ -1,7 +1,6 @@
-
 "use client";
 
-import { useState, type ChangeEvent, useEffect, useCallback } from "react";
+import { useState, type ChangeEvent, useEffect, useCallback, useMemo } from "react";
 import { 
   getEmployeeActivitiesFromStorage, 
   type EmployeeActivity, 
@@ -20,12 +19,17 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format, addDays, parseISO, isValid } from "date-fns";
 import { tr } from 'date-fns/locale';
+import { useAuth } from '@/context/AuthContext';
+import { getEmployeeActivitiesFromFirestore } from '@/lib/mock-data';
+import { useToast } from "@/hooks/use-toast";
+import { PATRON_EMAIL } from '@/lib/mock-data'; // Import PATRON_EMAIL for admin check (temporary)
+import { getPersonnelListFromFirestore } from '@/lib/mock-data';
 
 // Define a "patron" email. In a real app, this would be role-based.
-const PATRON_EMAIL = "admin@biztrack.com"; // Example patron email
+// const PATRON_EMAIL = "admin@example.com"; // Now imported from mock-data
 
 export default function EmployeeActivityPage() {
-  const [allActivities, setAllActivities] = useState<EmployeeActivity[]>([]);
+  const [activities, setActivities] = useState<EmployeeActivity[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedEmployeeEmail, setSelectedEmployeeEmail] = useState<string>("all"); // Filter by email
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -33,38 +37,59 @@ export default function EmployeeActivityPage() {
     to: new Date(),
   });
   const [personnelNames, setPersonnelNames] = useState<string[]>([]);
-  const [currentUser, setCurrentUser] = useState<{email: string, name: string} | null>(null);
+  const { toast } = useToast();
 
-  const fetchActivitiesAndPersonnel = useCallback(() => {
-    const user = getCurrentUser();
-    setCurrentUser(user);
-    const activitiesFromStorage = getEmployeeActivitiesFromStorage();
-    setAllActivities(activitiesFromStorage);
+  const { user, appUser, loading } = useAuth(); // Get user and appUser from AuthContext
+  const [personnelOptions, setPersonnelOptions] = useState<{ name: string; email: string }[]>([]); // For dropdown filter
 
-    const personnelList = getPersonnelListFromStorage();
-    const uniqueNames = [...new Set(personnelList.map(p => p.name))].sort();
-    setPersonnelNames(uniqueNames);
+  const fetchActivities = useCallback(async () => {
+    if (!user || !appUser) { // Do not fetch if no user is logged in or appUser data is missing
+      setActivities([]);
+      return;
+    }
 
-    // If current user is not a patron, pre-filter by their email and disable employee selector
-    // For now, let's keep the filter open for all, as per revised plan to make this the patron view
-    // if (user && user.email !== PATRON_EMAIL) {
-    //   setSelectedEmployeeEmail(user.email);
-    // }
+    // Determine if the current user is an admin (based on email for now)
+    const isAdmin = appUser?.email === PATRON_EMAIL; // Use appUser for role/email check
 
-  }, []);
+    // Fetch activities - filter by user UID if not admin
+    const fetchedActivities = await getEmployeeActivitiesFromFirestore(isAdmin ? undefined : user.uid); // Pass user.uid if not admin
+    setActivities(fetchedActivities);
+  }, [user, appUser]);
+
+  // Fetch personnel list for filter dropdown (only for admin)
+  const fetchPersonnelOptions = useCallback(async () => {
+    if (appUser?.role === 'admin') {
+      const personnelList = await getPersonnelListFromFirestore(); // Use the Firestore function
+      setPersonnelOptions(personnelList);
+    } else {
+      // If not admin, only show the current user in the filter (or hide filter)
+      if (appUser) {
+          setPersonnelOptions([{ name: appUser.name, email: appUser.email }]);
+          setSelectedEmployeeEmail(appUser.email); // Auto-select current user
+      } else {
+          setPersonnelOptions([]);
+          setSelectedEmployeeEmail("all"); // Or handle no user case
+      }
+    }
+  }, [appUser]);
 
   useEffect(() => {
-    fetchActivitiesAndPersonnel();
-    
-    const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'biztrack_employee_activities' || event.key === 'biztrack_personnel_list') {
-        fetchActivitiesAndPersonnel();
-      }
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [fetchActivitiesAndPersonnel]);
+    fetchActivities();
 
+    // Fetch personnel options when user or appUser changes
+    fetchPersonnelOptions();
+
+    // The storage event listener is for localStorage. We might need a real-time listener for Firestore.
+    // For now, we'll rely on the fetchActivities on mount/user change.
+    // If real-time updates are needed, consider Firestore real-time listeners.
+    // const handleStorageChange = (event: StorageEvent) => {
+    //   if (event.key === 'biztrack_employee_activities') {
+    //     fetchActivities();
+    //   }
+    // };
+    // window.addEventListener('storage', handleStorageChange);
+    // return () => window.removeEventListener('storage', handleStorageChange);
+  }, [fetchActivities, fetchPersonnelOptions]);
 
   const handleSearch = (event: ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(event.target.value.toLowerCase());
@@ -80,7 +105,7 @@ export default function EmployeeActivityPage() {
      }
   };
 
-  const filteredActivities = allActivities.filter(activity => {
+  const filteredActivities = activities.filter(activity => {
     const activityDate = parseISO(activity.timestamp);
     const matchesSearch = activity.description.toLowerCase().includes(searchTerm) || activity.employeeName.toLowerCase().includes(searchTerm);
     const matchesEmployee = selectedEmployeeEmail === "all" || activity.employeeEmail === selectedEmployeeEmail;

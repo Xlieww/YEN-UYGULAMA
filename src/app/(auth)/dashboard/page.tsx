@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect } from "react";
@@ -116,15 +115,15 @@ export default function DashboardPage() {
 
   useEffect(() => {
     fetchPersonnelAndActivities();
-    // Listen for storage changes to auto-update if activities are changed in other tabs/components
+    
     const handleStorageChange = (event: StorageEvent) => {
-      if (event.key === 'biztrack_personnel_list' || event.key === 'biztrack_employee_activities') {
+      if (event.key === 'biztrack_employee_activities') { // Listen for activity changes
         fetchPersonnelAndActivities();
       }
     };
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
+  }, []); // Empty dependency array ensures this runs once on mount and cleans up on unmount
 
   const handleAddPersonnel = (data: PersonnelFormValues) => {
     const existingPersonnel = getPersonnelListFromStorage().find(p => p.email === data.email);

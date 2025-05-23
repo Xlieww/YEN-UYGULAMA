@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -56,7 +55,7 @@ export default function QREntryPage() {
       if (user && user.email && user.name) {
         setUserForDisplay(user);
         setStatus('processing');
-        processEntry(user);
+        // processEntry(user); // Automatic processing removed
       } else {
         // console.log("QR Entry Page - No user found or user data incomplete, showing login prompt."); // For debugging
         setStatus('requires_login');
